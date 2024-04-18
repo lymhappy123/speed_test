@@ -25,6 +25,9 @@ global_filledTime = 0
 global_orderId = 0
 cost_times = []  # 用于存储每个订单的时间差
 file = None
+canceled = False
+max_cost_time = 0
+min_cost_time = 0
 
 def privateCallback(message):
     global global_openTime
@@ -33,6 +36,9 @@ def privateCallback(message):
     global global_startTime
     global global_orderId
     global file
+    global canceled
+    global max_cost_time
+    global min_cost_time
     print("privateCallback", message)
     try:
         data = json.loads(message)
@@ -47,12 +53,19 @@ def privateCallback(message):
                         cost_time = (global_openTime - global_orderId) / 1000000
                         req_time = (global_startTime - global_orderId) / 1000000
                         cost_times.append(cost_time)  # 将每个订单的时间差添加到列表中
+                        max_cost_time = max(max_cost_time, cost_time)  # 更新最大耗时
+                        if min_cost_time == 0 :
+                            min_cost_time = cost_time
+                        else:
+                            min_cost_time = min(min_cost_time, cost_time)  # 更新最小耗时
                         average_cost_time = sum(cost_times) / len(cost_times) if cost_times else 0
                         if file:
-                            file.write(f"orderId: {global_orderId}, orderTime: {global_startTime}, openTime: {global_openTime},  reqCost:{req_time}ms, cost_time:{cost_time}ms, average:{average_cost_time}ms\n")
+                            file.write(f"orderId: {global_orderId}, orderTime: {global_startTime}, openTime: {global_openTime},  reqCost:{req_time}ms, cost_time:{cost_time}ms, average:{average_cost_time}ms, min:{min_cost_time}ms, max:{max_cost_time}ms\n")
                             file.flush()
                         print("-----------------------------------------cancelOrder--------------------------------------------")
                         cancelOrder(orderId=global_orderId)
+                    elif dataItem['state'] == "canceled":
+                        canceled = True
     
     except Exception as e:
         print(f"Error for privateCallback: {e}")
@@ -60,6 +73,7 @@ def privateCallback(message):
 
 async def main():
     global file
+    global canceled
     try:        
         file = open('order_records.txt', 'a')
         print("-----------------------------------------start ws--------------------------------------------")
@@ -83,6 +97,14 @@ async def main():
             await placeOrder() 
             count += 1
             await asyncio.sleep(300)  # 每隔5分钟（300秒）下一次单
+             # 检查撤单状态
+            if not canceled:   
+                # 撤单未成功，重新连接 WebSocket
+                await ws.stop()  # 先关闭当前连接
+                await ws.start()  # 重新连接
+                await asyncio.sleep(5)  # 等待连接建立
+                await ws.subscribe(args1, callback=privateCallback)
+                await asyncio.sleep(5)  # 等待连接建立
             
         await asyncio.sleep(10)
         print("-----------------------------------------unsubscribe--------------------------------------------")
