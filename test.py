@@ -28,6 +28,8 @@ file = None
 canceled = False
 max_cost_time = 0
 min_cost_time = 0
+total_count = 10
+current_count = 0
 
 def privateCallback(message):
     global global_openTime
@@ -39,6 +41,8 @@ def privateCallback(message):
     global canceled
     global max_cost_time
     global min_cost_time
+    global current_count
+    global total_count
     print("privateCallback", message)
     try:
         data = json.loads(message)
@@ -60,7 +64,9 @@ def privateCallback(message):
                             min_cost_time = min(min_cost_time, cost_time)  # 更新最小耗时
                         average_cost_time = sum(cost_times) / len(cost_times) if cost_times else 0
                         if file:
-                            file.write(f"orderId: {global_orderId}, orderTime: {global_startTime}, openTime: {global_openTime},  reqCost:{req_time}ms, cost_time:{cost_time}ms, average:{average_cost_time}ms, min:{min_cost_time}ms, max:{max_cost_time}ms\n")
+                            file.write(f"{current_count}   orderId: {global_orderId}, orderTime: {global_startTime}, openTime: {global_openTime},  reqCost:{req_time}ms, cost_time:{cost_time}ms, average:{average_cost_time}ms, min:{min_cost_time}ms, max:{max_cost_time}ms\n")
+                            if current_count == total_count:
+                               file.write(f"test end,   average:{average_cost_time}ms, min:{min_cost_time}ms, max:{max_cost_time}ms\n") 
                             file.flush()
                         print("-----------------------------------------cancelOrder--------------------------------------------")
                         cancelOrder(orderId=global_orderId)
@@ -74,6 +80,8 @@ def privateCallback(message):
 async def main():
     global file
     global canceled
+    global total_count
+    global current_count
     try:        
         file = open('order_records.txt', 'a')
         print("-----------------------------------------start ws--------------------------------------------")
@@ -91,12 +99,11 @@ async def main():
         await ws.subscribe(args1, callback=privateCallback)
         await asyncio.sleep(5)
         
-        count = 0
-        while count < 60:
+        while current_count < total_count:
             print("-----------------------------------------placeorder--------------------------------------------")
             await placeOrder() 
-            count += 1
-            await asyncio.sleep(300)  # 每隔5分钟（300秒）下一次单
+            current_count += 1
+            await asyncio.sleep(20)  # 每隔5分钟（300秒）下一次单
              # 检查撤单状态
             if not canceled:   
                 # 撤单未成功，重新连接 WebSocket
