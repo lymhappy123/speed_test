@@ -28,7 +28,7 @@ file = None
 canceled = False
 max_cost_time = 0
 min_cost_time = 0
-total_count = 10
+total_count = 60
 current_count = 0
 
 def privateCallback(message):
@@ -103,7 +103,7 @@ async def main():
             print("-----------------------------------------placeorder--------------------------------------------")
             await placeOrder() 
             current_count += 1
-            await asyncio.sleep(20)  # 每隔5分钟（300秒）下一次单
+            await asyncio.sleep(300)  # 每隔5分钟（300秒）下一次单
              # 检查撤单状态
             if not canceled:   
                 # 撤单未成功，重新连接 WebSocket

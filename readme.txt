@@ -29,3 +29,12 @@ test end,   average:515.68582ms, min:472.5699ms, max:583.0383ms
 
 7、平均延时average最好在50ms左右，最大延时max不要超过75ms。
 
+8、需要安装python3.9及以上版本，可以使用conda配置python3.9环境
+wget https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.sh
+bash Miniconda3-latest-Linux-x86_64.sh 
+source ~/miniconda3/bin/activate
+conda config --set auto_activate_base false
+conda create --name py39 python=3.9
+conda activate py39
+conda deactivate
+
